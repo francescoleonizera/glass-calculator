@@ -4,24 +4,39 @@ import numpy as np
 from glasspy.predict import GlassNet
 import os
 
+# -------------------------
+# Configurazione Flask
+# -------------------------
 app = Flask(__name__)
-CORS(app)
+# Consenti solo richieste dal tuo sito Aruba
+CORS(app, origins=["https://www.submerged-combustion.com"])
 
-# Lazy load del modello
-glass_model = GlassNet()  # caricato subito
+# -------------------------
+# Caricamento modello al boot
+# -------------------------
+glass_model = GlassNet()  # caricato subito all'avvio
 
-
+# -------------------------
 # Lista di elementi supportati
+# -------------------------
 supported_oxides = [
     "SiO2","B2O3","Al2O3","Na2O","K2O","CaO","MgO","Li2O",
     "BaO","PbO","TiO2","ZrO2","Fe2O3","MnO","SrO","CeO2",
     "P2O5","ZnO"
 ]
 
+# -------------------------
+# Health check endpoint
+# -------------------------
+@app.route("/")
+def index():
+    return "GlassNet API is running!"
+
+# -------------------------
+# Endpoint principale
+# -------------------------
 @app.route("/energy", methods=["POST"])
 def calculate_energy():
-    global glass_model
-
     data = request.json
     composition = {k: float(v) if v != '' else 0.0 for k, v in data.items() if k in supported_oxides}
 
@@ -58,6 +73,9 @@ def calculate_energy():
 
     return jsonify(result)
 
+# -------------------------
+# Avvio server
+# -------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))  # Render imposta la porta con PORT
     app.run(host="0.0.0.0", port=port)

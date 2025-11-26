@@ -5,7 +5,7 @@ from glasspy.predict import GlassNet
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["https://www.submerged-combustion.com"])
 
 # Lazy load del modello
 glass_model = None

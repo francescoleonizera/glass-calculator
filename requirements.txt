@@ -4,3 +4,4 @@ pandas
 numpy
 glasspy
 gunicorn
+torch==2.3.1+cpu

@@ -82,7 +82,7 @@ def calculate_energy():
 # Servire la pagina HTML
 @app.route("/")
 def index():
-    return send_from_directory('.', 'calcoli_vetro.html')
+    return send_from_directory('static', 'calcoli_vetro.html')
     if glass_model is None:
     glass_model = GlassNet()
 

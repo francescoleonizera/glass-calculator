@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Calcoli Vetro - Combustion Consulting Italy srl</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <link href="img/Logo_Combustion-Consulting-No-backgroung (1).png" rel="icon">
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700&family=Ubuntu:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.4.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <style>
+        .calc-box {
+            background: #fff;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        canvas {
+            margin-top: 20px;
+        }
+
+        #sumError {
+            color: red;
+            font-weight: bold;
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="container-fluid page-header py-5 mb-5" style="background: url('img/carousel-bg-2.png') center / cover no-repeat;">
+    <div class="container py-5">
+        <h1 class="display-3 text-white mb-3 animated slideInDown">Glass Properties Calculator</h1>
+    </div>
+</div>
+
+<div class="container py-5">
+    <h2 class="text-center mb-5">Please specify your glass composition</h2>
+
+    <div class="calc-box">
+        <h3>Glass properties</h3>
+        <form id="form_energy">
+            <div class="row">
+                <div class="col-md-3">
+                    <label>SiO₂</label>
+                    <input class="form-control" id="SiO2" name="SiO2" step="0.01" type="number" readonly>
+                </div>
+                <div class="col-md-3"><label>B₂O₃</label><input class="form-control" name="B2O3" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>Al₂O₃</label><input class="form-control" name="Al2O3" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>Na₂O</label><input class="form-control" name="Na2O" step="0.01" type="number"></div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3"><label>K₂O</label><input class="form-control" name="K2O" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>CaO</label><input class="form-control" name="CaO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>MgO</label><input class="form-control" name="MgO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>Li₂O</label><input class="form-control" name="Li2O" step="0.01" type="number"></div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3"><label>BaO</label><input class="form-control" name="BaO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>PbO</label><input class="form-control" name="PbO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>TiO₂</label><input class="form-control" name="TiO2" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>ZrO₂</label><input class="form-control" name="ZrO2" step="0.01" type="number"></div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3"><label>Fe₂O₃</label><input class="form-control" name="Fe2O3" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>MnO</label><input class="form-control" name="MnO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>SrO</label><input class="form-control" name="SrO" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>CeO₂</label><input class="form-control" name="CeO2" step="0.01" type="number"></div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-md-3"><label>P₂O₅</label><input class="form-control" name="P2O5" step="0.01" type="number"></div>
+                <div class="col-md-3"><label>ZnO</label><input class="form-control" name="ZnO" step="0.01" type="number"></div>
+            </div>
+
+            <div id="sumError">Error!! The total sum cannot be greater than 100</div>
+
+            <button class="btn btn-success mt-3" type="submit">Compute</button>
+        </form>
+
+        <div id="output_charts" class="mt-4"></div>
+    </div>
+</div>
+
+<script>
+const API_URL = "/energy"; // perché Render serve tutto sullo stesso dominio
+
+document.addEventListener("DOMContentLoaded", () => {
+    const formEnergy = document.getElementById("form_energy");
+    const outputCharts = document.getElementById("output_charts");
+    const sumError = document.getElementById("sumError");
+    const sio2Input = document.getElementById("SiO2");
+
+    function updateSiO2() {
+        const inputs = Array.from(document.querySelectorAll('#form_energy input')).filter(i => i.name !== 'SiO2');
+        let sum = 0;
+        inputs.forEach(input => {
+            const val = parseFloat(input.value);
+            if(!isNaN(val)) sum += val;
+        });
+
+        if(sum > 100){
+            sumError.style.display = 'block';
+            sio2Input.value = '';
+        } else {
+            sumError.style.display = 'none';
+            sio2Input.value = (100 - sum).toFixed(2);
+        }
+    }
+
+    document.querySelectorAll('#form_energy input').forEach(input => {
+        if(input.name !== 'SiO2'){
+            input.addEventListener('input', updateSiO2);
+        }
+    });
+
+    function extractTemp(key){
+        const match = key.match(/\d+/);
+        return match ? parseInt(match[0]) : null;
+    }
+
+    formEnergy.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if(parseFloat(sio2Input.value) < 0){
+            alert("La somma degli ossidi supera 100, correggi i valori!");
+            return;
+        }
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        outputCharts.innerHTML = "Computing...";
+
+        try {
+            const resp = await fetch(`${API_URL}/energy`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+
+            const result = await resp.json();
+            console.log("Backend result:", result);
+            outputCharts.innerHTML = "";
+
+            function createChart(title, labels, values, type='line', isBar=false) {
+                const canvas = document.createElement('canvas');
+                outputCharts.appendChild(canvas);
+                new Chart(canvas.getContext('2d'), {
+                    type: type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: title,
+                            data: values,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: isBar ? 'rgba(54, 162, 235, 0.5)' : undefined,
+                            borderWidth: 2,
+                            fill: !isBar
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: { display: true, text: title }
+                        },
+                        scales: {
+                            x: { title: { text: isBar ? "Category" : "Temperature (K)", display: true }},
+                            y: { beginAtZero: false }
+                        }
+                    }
+                });
+            }
+
+            const categories = ["Viscosity","Cp","Density","CTE","SurfaceTension","Resistivity"];
+            categories.forEach(cat => {
+                if (!result[cat]) return;
+                const entries = Object.entries(result[cat])
+                    .map(([k,v]) => ({ key: k, temp: extractTemp(k), value: v }))
+                    .filter(o => o.temp !== null)
+                    .sort((a,b) => a.temp - b.temp);
+                if(entries.length === 0) return;
+                const labels = entries.map(e => e.temp);
+                const values = entries.map(e => e.value);
+                createChart(cat, labels, values, "line", false);
+            });
+
+            if(result.SingleValues){
+                const smallValues = {};
+                const largeValues = {};
+                for(const key in result.SingleValues){
+                    if(Math.abs(result.SingleValues[key]) < 50){
+                        smallValues[key] = result.SingleValues[key];
+                    } else {
+                        largeValues[key] = result.SingleValues[key];
+                    }
+                }
+                createChart("Single Values - S", Object.keys(smallValues), Object.values(smallValues), "bar", true);
+                createChart("Single Values - L", Object.keys(largeValues), Object.values(largeValues), "bar", true);
+            }
+
+        } catch (err) {
+            outputCharts.innerHTML = `<span style="color:red">Error: ${err}</span>`;
+        }
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

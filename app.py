@@ -8,7 +8,8 @@ app = Flask(__name__)
 CORS(app)
 
 # Lazy load del modello
-glass_model = None
+glass_model = GlassNet()  # caricato subito
+
 
 # Lista di elementi supportati
 supported_oxides = [
@@ -20,8 +21,6 @@ supported_oxides = [
 @app.route("/energy", methods=["POST"])
 def calculate_energy():
     global glass_model
-    if glass_model is None:
-        glass_model = GlassNet()  # carica modello al primo uso
 
     data = request.json
     composition = {k: float(v) if v != '' else 0.0 for k, v in data.items() if k in supported_oxides}

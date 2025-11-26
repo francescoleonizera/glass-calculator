@@ -10,7 +10,7 @@ app = Flask(__name__)
 from flask_cors import CORS
 CORS(app)
 
-glass_model = GlassNet()
+glass_model = None
 
 # Lista di elementi supportati
 supported_oxides = [
@@ -83,6 +83,8 @@ def calculate_energy():
 @app.route("/")
 def index():
     return send_from_directory('.', 'calcoli_vetro.html')
+    if glass_model is None:
+    glass_model = GlassNet()
 
 if __name__ == "__main__":
     import os

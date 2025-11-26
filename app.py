@@ -1,15 +1,14 @@
-# va runnato insieme a (da bash): cloudflared tunnel --url http://127.0.0.1:5000 --protocol http2, quindi copiare url tipo: https://relates-screensaver-buses-pierre.trycloudflare.com che viene cre
-#creato ogni volta e incollarlo sull'html della pagina calcoli_vetro.html 
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import pandas as pd
 import numpy as np
 from glasspy.predict import GlassNet
+import os
 
 app = Flask(__name__)
-
-from flask_cors import CORS
 CORS(app)
 
+# Lazy load del modello
 glass_model = None
 
 # Lista di elementi supportati
@@ -22,15 +21,18 @@ supported_oxides = [
 # Endpoint energia / proprietà vetro
 @app.route("/energy", methods=["POST"])
 def calculate_energy():
+    global glass_model
+    if glass_model is None:
+        glass_model = GlassNet()  # carica modello al primo uso
+
     data = request.json
-    # Pulizia dei valori, input vuoti diventano 0
+    # Pulizia valori input, vuoti diventano 0
     composition = {k: float(v) if v != '' else 0.0 for k, v in data.items() if k in supported_oxides}
     
     # Predizione con GlassNet
     predictions = glass_model.predict(composition)
     pred = predictions.loc[0]
 
-    # 🔹 Organizzazione in categorie
     result = {}
 
     # VISCOSITY
@@ -59,7 +61,7 @@ def calculate_energy():
 
     # Cp integrata per energia
     temps = np.array([293, 473, 673, 1073, 1273, 1473, 1673])
-    cp_values = np.array([pred[c] for c in cp_cols[:7]])  # solo le prime 7 temperature standard
+    cp_values = np.array([pred[c] for c in cp_cols[:7]])
     energy_MJ_per_kg = np.trapz(cp_values, temps) / 1e6
     result["SingleValues"] = {"Energy_MJ_per_kg_25-1400C": energy_MJ_per_kg}
 
@@ -78,16 +80,13 @@ def calculate_energy():
 
     return jsonify(result)
 
-
 # Servire la pagina HTML
 @app.route("/")
 def index():
     return send_from_directory('static', 'calcoli_vetro.html')
-    if glass_model is None:
-    glass_model = GlassNet()
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
